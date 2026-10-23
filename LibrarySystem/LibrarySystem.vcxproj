@@ -126,19 +126,26 @@
     <ClInclude Include="BaseSystem.h" />
     <ClInclude Include="Book.h" />
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="GeneralBook.h" />
     <ClInclude Include="LibrarySystem.h" />
     <ClInclude Include="Loan.h" />
+    <ClInclude Include="Periodical.h" />
     <ClInclude Include="Person.h" />
     <ClInclude Include="Reader.h" />
+    <ClInclude Include="ReferenceBook.h" />
     <ClInclude Include="Teacher.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Book.cpp" />
+    <ClCompile Include="GeneralBook.cpp" />
     <ClCompile Include="LibrarySystem.cpp" />
     <ClCompile Include="Loan.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Periodical.cpp" />
     <ClCompile Include="Person.cpp" />
     <ClCompile Include="Reader.cpp" />
+    <ClCompile Include="ReferenceBook.cpp" />
     <ClCompile Include="Teacher.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

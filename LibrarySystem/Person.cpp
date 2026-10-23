@@ -30,5 +30,12 @@ void Person::showMyLoans() const {
 }
 
 void Person::renewLoan(Loan* l) {
+    if (!l->canRenew()) 
+    {
+        std::cout << ">> 续借失败：已达最大续借次数（2次）或已归还！\n";
+        return;
+    }
     l->renew(getBorrowDays());
+    l->increaseRenewCount();
 }
+

@@ -8,11 +8,16 @@
 #include "BaseSystem.h"
 #include <vector>
 #include <string>
+#include "GeneralBook.h"
+#include "ReferenceBook.h"
+#include "Periodical.h"
+
+
 
 class LibrarySystem : public BaseSystem {
 
 private:
-    std::vector<Book> bookList;
+    std::vector<Book*> bookList;    // 多态：存指针，指向不同子类
     std::vector<Reader> readerList;
     std::vector<Teacher> teacherList;
     std::vector<Loan> loanList;
@@ -62,6 +67,8 @@ public:
     void showMenu();
     void run();
     void renewLoan();
+
+    void showOverdueLoans() const;
 
 };
 

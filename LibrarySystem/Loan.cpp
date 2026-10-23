@@ -61,3 +61,25 @@ void Loan::renew(int days) {
 }
 
 
+int Loan::getRenewCount() const { return renewCount; }
+
+bool Loan::canRenew() const {
+    return !returned && renewCount < MAX_RENEW;
+}
+
+void Loan::increaseRenewCount() {
+    renewCount++;
+}
+
+double Loan::calcFine(const string& today) const {
+    if (returned) return 0.0;
+    // 解析两个日期，比较今天是否超过应还日期
+    int y1 = stoi(today.substr(0, 4)), m1 = stoi(today.substr(5, 2)), d1 = stoi(today.substr(8, 2));
+    int y2 = stoi(dueDate.substr(0, 4)), m2 = stoi(dueDate.substr(5, 2)), d2 = stoi(dueDate.substr(8, 2));
+    struct tm t1 = { 0 }; t1.tm_year = y1 - 1900; t1.tm_mon = m1 - 1; t1.tm_mday = d1;
+    struct tm t2 = { 0 }; t2.tm_year = y2 - 1900; t2.tm_mon = m2 - 1; t2.tm_mday = d2;
+    time_t diff = mktime(&t1) - mktime(&t2);
+    int overdueDays = diff / 86400;
+    if (overdueDays <= 0) return 0.0;
+    return overdueDays * 0.5;   // 每天罚款0.5元
+}

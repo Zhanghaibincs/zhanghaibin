@@ -5,27 +5,32 @@
 #include <ctime>
 #include <iomanip>
 #include <limits>
+#include "Utils.h"
+
 
 using namespace std;
 
 LibrarySystem::LibrarySystem() { loadData(); }
-LibrarySystem::~LibrarySystem() { saveData(); }
+LibrarySystem::~LibrarySystem() {
+    saveData();
+    for (auto* b : bookList) delete b;   // 释放所有图书对象
+    bookList.clear();
+}
 
 // ========== 内部查找 ==========
 Book* LibrarySystem::findBookById(const string& id) {
-    for (auto& b : bookList) if (b.getId() == id) return &b;
+    for (auto& b : bookList) if (b->getId() == id) return b;
     return nullptr;
 }
 
 Reader* LibrarySystem::findReaderById(const string& id) {
-    for (auto& r : readerList) if (r.getId() == id) return &r;
-    return nullptr;
+    return findById(readerList, id);
 }
 
 Teacher* LibrarySystem::findTeacherById(const string& id) {
-    for (auto& t : teacherList) if (t.getId() == id) return &t;
-    return nullptr;
+    return findById(teacherList, id);
 }
+
 
 Loan* LibrarySystem::findActiveLoan(const string& bookId, const string& personId) {
     for (auto& l : loanList) {
@@ -65,31 +70,59 @@ string LibrarySystem::addDays(const string& date, int days) const {
 
 // ========== 图书管理 ==========
 void LibrarySystem::addBook() {
-    string id, title, author, publisher; int stock;
+    int type;
     cout << "\n===== 添加图书 =====\n";
+    cout << "选择类型:\n";
+    cout << "  1.普通图书  2.参考工具书/古籍特藏  3.期刊杂志/多媒体光盘\n";
+    cout << "请选择: "; cin >> type;
+
+    string id, title, author, publisher; int stock;
     cout << "图书编号: "; cin >> id;
-    if (findBookById(id)) { cout << ">> 编号已存在。\n"; return; }
+    for (const auto* b : bookList) if (b->getId() == id) { cout << ">> 编号已存在。\n"; return; }
     cin.ignore();
     cout << "书    名: "; getline(cin, title);
     cout << "作    者: "; getline(cin, author);
     cout << "出 版 社: "; getline(cin, publisher);
     cout << "库存数量: "; cin >> stock;
     if (stock < 0) stock = 0;
-    bookList.push_back(Book(id, title, author, publisher, stock));
-    cout << ">> 添加成功。\n";
+
+    if (type == 1) {
+        bookList.push_back(new GeneralBook(id, title, author, publisher, stock));
+    }
+    else if (type == 2) {
+        cin.ignore();
+        string room;
+        cout << "藏    室: "; getline(cin, room);
+        bookList.push_back(new ReferenceBook(id, title, author, publisher, stock, room));
+    }
+    else if (type == 3) {
+        cin.ignore();
+        string vol, iss;
+        cout << "卷    号: "; getline(cin, vol);
+        cout << "期    数: "; getline(cin, iss);
+        bookList.push_back(new Periodical(id, title, author, publisher, stock, iss, vol));
+    }
+    else {
+        cout << ">> 类型无效。\n"; return;
+    }
+    cout << ">> 添加成功！\n";
 }
 
 void LibrarySystem::removeBook() {
     string id;
     cout << "\n===== 删除图书 =====\n";
     cout << "图书编号: "; cin >> id;
-    Book* b = findBookById(id);
-    if (!b) { cout << ">> 未找到。\n"; return; }
-    if (b->getAvailableStock() != b->getTotalStock()) {
-        cout << ">> 有未归还副本，无法删除。\n"; return;
+    for (auto it = bookList.begin(); it != bookList.end(); ++it) {
+        if ((*it)->getId() == id) {
+            if ((*it)->getAvailableStock() != (*it)->getTotalStock()) {
+                cout << ">> 有未归还副本，无法删除。\n"; return;
+            }
+            delete* it;
+            bookList.erase(it);
+            cout << ">> 删除成功。\n"; return;
+        }
     }
-    for (auto it = bookList.begin(); it != bookList.end(); ++it)
-        if (it->getId() == id) { bookList.erase(it); cout << ">> 删除成功。\n"; return; }
+    cout << ">> 未找到。\n";
 }
 
 void LibrarySystem::searchBook() const {
@@ -98,17 +131,18 @@ void LibrarySystem::searchBook() const {
     cout << "1.按编号 2.按书名 3.按作者: "; cin >> choice; cin.ignore();
     for (const auto& b : bookList) {
         bool match = false;
-        if (choice == 1 && b.getId() == key) { getline(cin, key); match = (b.getId() == key); }
-        if (choice == 2) { cout << "书名: "; getline(cin, key); match = (b.getTitle().find(key) != string::npos); }
-        if (choice == 3) { cout << "作者: "; getline(cin, key); match = (b.getAuthor().find(key) != string::npos); }
-        if (match) b.display();
+        if (choice == 1 && b->getId() == key) { getline(cin, key); match = (b->getId() == key); }
+        if (choice == 2) { cout << "书名: "; getline(cin, key); match = (b->getTitle().find(key) != string::npos); }
+        if (choice == 3) { cout << "作者: "; getline(cin, key); match = (b->getAuthor().find(key) != string::npos); }
+        if (match) cout << *b;
     }
 }
 
 void LibrarySystem::displayAllBooks() const {
     cout << "\n===== 全部图书 (" << bookList.size() << "本) =====\n";
-    for (const auto& b : bookList) b.display();
+    for (const auto& b : bookList) cout << *b;
 }
+
 
 // ========== 读者管理 ==========
 void LibrarySystem::addReader() {
@@ -188,10 +222,18 @@ void LibrarySystem::borrowBook() {
     bool canBorrow = r ? r->canBorrow() : t->canBorrow();
     if (!canBorrow) { cout << ">> 已达借书上限。\n"; return; }
     if (findActiveLoan(bookId, personId)) { cout << ">> 已借过此书。\n"; return; }
+    if (!b->canBorrow()) {
+        cout << ">> 抱歉，" << b->getType() << "仅限馆内阅览，不能外借！\n";
+        return;
+    }
     if (!b->borrowOne()) { cout << ">> 库存不足。\n"; return; }
 
     string today = todayString();
-    int days = p->getBorrowDays();       // 多态调用：学生30，老师60
+    int days = b->getBorrowDays();       // 先按书的类型定借期
+    if (b->getType() == "普通图书") {
+        days = p->getBorrowDays();       // 普通图书再按人调整（学生30/老师60）
+    }
+    // 期刊已经重写成3天，参考工具书根本走不到这
     string due = addDays(today, days);
     string loanId = "L" + to_string(loanList.size() + 1);
     loanList.push_back(Loan(loanId, b, p, today, due));
@@ -219,8 +261,13 @@ void LibrarySystem::returnBook() {
     if (r) r->decreaseBorrowCount();
     else if (t) t->decreaseBorrowCount();
 
+    double fine = l->calcFine(todayString());
     l->markReturned(todayString());
     cout << ">> 还书成功。\n";
+    if (fine > 0) {
+        cout << ">> 逾期罚款：" << fine << "元\n";
+    }
+
 }
 
 void LibrarySystem::displayAllLoans() const {
@@ -243,21 +290,51 @@ void LibrarySystem::displayPersonLoans() const {
     cout << ">> 人员不存在。\n";
 }
 
+void LibrarySystem::showOverdueLoans() const {
+    string today = todayString();
+    cout << "\n===== 逾期未还报表 =====\n";
+    bool found = false;
+    for (const auto& l : loanList) {
+        if (!l.isReturned() && l.calcFine(today) > 0) {
+            l.display();
+            cout << "逾期罚款: " << l.calcFine(today) << "元\n";
+            found = true;
+        }
+    }
+    if (!found) cout << ">> 当前没有逾期记录。\n";
+}
+
+
 
 // ========== 数据持久化 ==========
 void LibrarySystem::loadData() {
     ifstream bf(BOOK_FILE);
     if (bf.is_open()) {
-        string id, title, author, publisher; int total, avail;
-        while (bf >> id >> total >> avail) {
+        string id, type, title, author, publisher; int total, avail;
+        while (bf >> id >> type >> total >> avail) {
             bf.ignore();
             getline(bf, title); getline(bf, author); getline(bf, publisher);
-            Book b(id, title, author, publisher, total);
-            b.setAvailableStock(avail);
+            Book* b = nullptr;
+            if (type == "普通图书") {
+                b = new GeneralBook(id, title, author, publisher, total);
+            }
+            else if (type == "参考工具书/古籍特藏") {
+                string room; getline(bf, room);
+                b = new ReferenceBook(id, title, author, publisher, total, room);
+            }
+            else if (type == "期刊杂志/多媒体光盘") {
+                string vol, iss; getline(bf, vol); getline(bf, iss);
+                b = new Periodical(id, title, author, publisher, total, iss, vol);
+            }
+            else {
+                b = new GeneralBook(id, title, author, publisher, total);
+            }
+            b->setAvailableStock(avail);
             bookList.push_back(b);
         }
         bf.close();
     }
+
     ifstream rf(READER_FILE);
     if (rf.is_open()) {
         string id, name, gender, phone; int cur;
@@ -301,10 +378,12 @@ void LibrarySystem::loadData() {
 void LibrarySystem::saveData() {
     ofstream bf(BOOK_FILE, ios::trunc);
     for (const auto& b : bookList) {
-        bf << b.getId() << " " << b.getTotalStock() << " " << b.getAvailableStock() << "\n";
-        bf << b.getTitle() << "\n" << b.getAuthor() << "\n" << b.getPublisher() << "\n";
+        bf << b->getId() << " " << b->getType() << " "
+            << b->getTotalStock() << " " << b->getAvailableStock() << "\n";
+        bf << b->getTitle() << "\n" << b->getAuthor() << "\n" << b->getPublisher() << "\n";
     }
     bf.close();
+
     ofstream rf(READER_FILE, ios::trunc);
     for (const auto& r : readerList) {
         rf << r.getId() << " " << r.getCurrentBorrowed() << "\n";
@@ -331,12 +410,12 @@ void LibrarySystem::saveData() {
 // ========== 菜单 ==========
 void LibrarySystem::showMenu() {
     cout << "\n========================================\n";
-    cout << "       图书馆借阅管理系统 v2.0\n";
+    cout << "       图书馆借阅管理系统 v3.0\n";
     cout << "========================================\n";
     cout << "  1. 添加图书\n  2. 删除图书\n  3. 查询图书\n  4. 显示全部图书\n";
     cout << "  5. 添加学生读者\n  6. 删除读者\n  7. 查询读者\n  8. 显示全部读者\n";
     cout << "  9. 添加教师\n 10. 显示全部教师\n";
-    cout << " 11. 借书\n 12. 还书\n 13. 续借\n 14. 显示全部借阅记录\n 15. 查询某人借阅记录\n";
+    cout << " 11. 借书\n 12. 还书\n 13. 续借\n 14. 显示全部借阅记录\n 15. 查询某人借阅记录\n 16. 逾期报表\n";
     cout << "  0. 保存并退出\n";
     cout << "========================================\n请输入选项: ";
 }
@@ -367,6 +446,7 @@ void LibrarySystem::run() {
         case 13: renewLoan(); break;
         case 14: displayAllLoans(); break;
         case 15: displayPersonLoans(); break;
+        case 16: showOverdueLoans(); break;
         default: cout << ">> 无效选项。\n"; break;
         }
     }

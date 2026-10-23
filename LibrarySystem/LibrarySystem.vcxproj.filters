@@ -48,6 +48,18 @@
     <ClInclude Include="BaseSystem.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="GeneralBook.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="ReferenceBook.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Periodical.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Book.cpp">
@@ -69,6 +81,15 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="Teacher.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneralBook.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="ReferenceBook.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="Periodical.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

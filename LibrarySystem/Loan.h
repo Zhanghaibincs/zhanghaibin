@@ -16,6 +16,8 @@ private:
     bool returned;
     Book* book;        // 关联：借的是哪本书
     Person* person;    // 关联：谁借的（学生或老师都行）
+    int renewCount;          // 已续借次数
+    static const int MAX_RENEW = 2;   // 最多续借2次
 
 public:
     Loan();
@@ -32,6 +34,11 @@ public:
     void markReturned(const std::string& date);
     void display() const;
     void renew(int days);    // 续借：延长 days 天
+
+    int getRenewCount() const;
+    bool canRenew() const;
+    void increaseRenewCount();
+    double calcFine(const std::string& today) const;   // 计算逾期罚款
 
 };
 
